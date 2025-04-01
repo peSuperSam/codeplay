@@ -1,16 +1,56 @@
-# appgameensino
+# 📚 CodePlay
 
-A new Flutter project.
+**CodePlay** é um aplicativo educacional interativo desenvolvido em **Flutter**, com foco no ensino de conceitos fundamentais de codificação digital como **ASCII**, **cores RGB** e **números binários**, voltado para alunos do **4º ano do Ensino Fundamental**. O projeto está alinhado com as competências da **BNCC (EF04CO04 e EF04CO05)**, integrando aprendizado, acessibilidade e gamificação.
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## ✨ Funcionalidades
 
-A few resources to get you started if this is your first Flutter project:
+- 🎨 Interface moderna e responsiva (Flutter Web & Android)
+- 🤖 Mascote animado com fala (Text-to-Speech)
+- 🧠 Oficina pedagógica sobre codificação digital
+- 🌈 Módulos interativos: ASCII, RGB e Binário
+- 🌓 Suporte a tema claro/escuro
+- 🔊 Sons e animações responsivas para feedback tátil
+- 📜 Tela "Sobre o Projeto" com informações pedagógicas
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+---
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 🏗 Arquitetura e Tecnologias
+
+- **Flutter** com suporte para Web e Mobile
+- **Gerenciamento de estado** (ex: Riverpod/Provider)
+- **Design modular e reutilizável**
+- **Lottie** para animações
+- **Google Fonts** para identidade visual
+
+---
+
+## 🎯 Objetivos Educacionais (BNCC)
+
+- **EF04CO04:** Compreender como os computadores representam dados digitalmente.
+- **EF04CO05:** Explorar sistemas de codificação como binário, ASCII e RGB.
+
+---
+
+## 🧑‍💻 Equipe
+
+- **Desenvolvimento:** Mateus ([@peSuperSam](https://github.com/peSuperSam))
+- **Disciplina:** Ensino de Computação II – 2025.1
+
+---
+
+## 🚀 Como executar
+
+```bash
+# Clonar o repositório
+git clone https://github.com/peSuperSam/codeplay.git
+
+# Entrar na pasta do projeto
+cd codeplay
+
+# Instalar as dependências
+flutter pub get
+
+# Executar
+flutter run -d chrome # ou -d android
