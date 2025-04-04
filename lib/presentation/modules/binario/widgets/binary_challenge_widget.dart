@@ -1,15 +1,17 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../binario_perguntas.dart';
 
 class BinaryChallengeWidget extends StatefulWidget {
   final bool questionType; // true = binário para decimal, false = decimal para binário
   final Function(bool isCorrect) onAnswer;
+  final int currentQuestion; // Adicionado para forçar reconstrução quando mudar a pergunta
 
   const BinaryChallengeWidget({
     super.key,
     required this.questionType,
     required this.onAnswer,
+    required this.currentQuestion,
   });
 
   @override
@@ -22,6 +24,8 @@ class _BinaryChallengeWidgetState extends State<BinaryChallengeWidget> {
   late String questionValue;
   bool _hasAnswered = false;
   int? _selectedOption;
+  late String _correctBinary; // Para o modo decimal para binário
+  final _binarioPerguntas = BinarioPerguntas();
 
   @override
   void initState() {
@@ -32,152 +36,35 @@ class _BinaryChallengeWidgetState extends State<BinaryChallengeWidget> {
   @override
   void didUpdateWidget(BinaryChallengeWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.questionType != widget.questionType) {
+    // Regenerar a pergunta quando o número da pergunta atual mudar
+    // Isso garante que uma nova pergunta seja gerada quando avançamos para a próxima questão
+    if (widget.currentQuestion != oldWidget.currentQuestion) {
       _generateQuestion();
     }
   }
 
   void _generateQuestion() {
-    final random = Random();
-    
     // Resetar estado
     _hasAnswered = false;
     _selectedOption = null;
     
-    if (widget.questionType) {
-      // Binário para decimal
-      // Gerar um número binário de até 5 dígitos (máximo 31 em decimal)
-      final binaryLength = random.nextInt(3) + 3; // 3 a 5 dígitos
-      final binaryDigits = List.generate(binaryLength, (_) => random.nextInt(2));
-      
-      // Garantir que não comece com 0
-      if (binaryDigits[0] == 0 && binaryLength > 1) {
-        binaryDigits[0] = 1;
-      }
-      
-      // Converter para string
-      questionValue = binaryDigits.join();
-      
-      // Calcular o valor decimal correto
-      correctAnswer = _binaryToDecimal(questionValue);
-      
-      // Gerar opções erradas
-      options = _generateWrongOptions(correctAnswer, 31);
-    } else {
-      // Decimal para binário
-      // Gerar um número decimal de 1 a 31
-      correctAnswer = random.nextInt(30) + 1;
-      questionValue = correctAnswer.toString();
-      
-      // Converter para binário
-      final correctBinary = _decimalToBinary(correctAnswer);
-      
-      // Gerar opções erradas (em binário)
-      final wrongOptions = _generateWrongBinaryOptions(correctBinary);
-      
-      // Converter todas as opções para decimal para armazenar
-      options = [
-        _binaryToDecimal(correctBinary),
-        _binaryToDecimal(wrongOptions[0]),
-        _binaryToDecimal(wrongOptions[1]),
-      ];
+    // Usar a classe BinarioPerguntas para gerar a pergunta
+    final pergunta = _binarioPerguntas.gerarPergunta(widget.questionType);
+    
+    questionValue = pergunta['questionValue'];
+    correctAnswer = pergunta['correctAnswer'];
+    options = List<int>.from(pergunta['options']);
+    
+    if (!widget.questionType) {
+      // Para o modo decimal para binário, armazenar o binário correto
+      _correctBinary = pergunta['correctBinary'];
     }
     
     // Embaralhar opções
     options.shuffle();
   }
 
-  // Converter binário para decimal
-  int _binaryToDecimal(String binary) {
-    int decimal = 0;
-    for (int i = 0; i < binary.length; i++) {
-      if (binary[i] == '1') {
-        decimal += 1 << (binary.length - i - 1);
-      }
-    }
-    return decimal;
-  }
-
-  // Converter decimal para binário
-  String _decimalToBinary(int decimal) {
-    if (decimal == 0) return '0';
-    
-    String binary = '';
-    int value = decimal;
-    
-    while (value > 0) {
-      binary = '${value % 2}$binary';
-      value ~/= 2;
-    }
-    
-    return binary;
-  }
-
-  // Gerar opções erradas para decimal
-  List<int> _generateWrongOptions(int correctAnswer, int maxValue) {
-    final random = Random();
-    final Set<int> wrongOptions = {};
-    
-    while (wrongOptions.length < 2) {
-      int wrongOption;
-      
-      // Gerar opção próxima ao valor correto
-      if (random.nextBool() && wrongOptions.isEmpty) {
-        // Opção próxima (±3)
-        final offset = random.nextInt(3) + 1;
-        wrongOption = random.nextBool() 
-            ? correctAnswer + offset 
-            : max(1, correctAnswer - offset);
-      } else {
-        // Opção aleatória
-        wrongOption = random.nextInt(maxValue) + 1;
-      }
-      
-      // Garantir que não seja igual à resposta correta
-      if (wrongOption != correctAnswer && wrongOption > 0 && wrongOption <= maxValue) {
-        wrongOptions.add(wrongOption);
-      }
-    }
-    
-    return [correctAnswer, ...wrongOptions.toList()];
-  }
-
-  // Gerar opções erradas para binário
-  List<String> _generateWrongBinaryOptions(String correctBinary) {
-    final random = Random();
-    final wrongOptions = <String>[];
-    
-    while (wrongOptions.length < 2) {
-      String wrongOption;
-      
-      if (random.nextBool() && wrongOptions.isEmpty) {
-        // Modificar um bit do binário correto
-        final binaryList = correctBinary.split('');
-        final indexToChange = random.nextInt(binaryList.length);
-        binaryList[indexToChange] = binaryList[indexToChange] == '0' ? '1' : '0';
-        wrongOption = binaryList.join();
-      } else {
-        // Gerar um binário aleatório de tamanho similar
-        final length = correctBinary.length + (random.nextInt(3) - 1);
-        final digits = List.generate(max(1, length), (_) => random.nextInt(2).toString());
-        wrongOption = digits.join();
-        
-        // Garantir que não comece com 0 se tiver mais de 1 dígito
-        if (wrongOption.startsWith('0') && wrongOption.length > 1) {
-          final chars = wrongOption.split('');
-          chars[0] = '1';
-          wrongOption = chars.join();
-        }
-      }
-      
-      // Garantir que não seja igual à resposta correta
-      if (wrongOption != correctBinary && wrongOption.isNotEmpty) {
-        wrongOptions.add(wrongOption);
-      }
-    }
-    
-    return wrongOptions;
-  }
+  // Métodos de conversão e geração de opções foram movidos para a classe BinarioPerguntas
 
   void _checkAnswer(int selectedIndex) {
     if (_hasAnswered) return;
@@ -187,9 +74,12 @@ class _BinaryChallengeWidgetState extends State<BinaryChallengeWidget> {
       _selectedOption = selectedIndex;
     });
     
-    final isCorrect = widget.questionType
-        ? options[selectedIndex] == correctAnswer
-        : _decimalToBinary(options[selectedIndex]) == _decimalToBinary(correctAnswer);
+    // Usar a classe BinarioPerguntas para verificar a resposta
+    final isCorrect = _binarioPerguntas.verificarResposta(
+      widget.questionType,
+      options[selectedIndex],
+      correctAnswer
+    );
     
     // Notificar o resultado
     widget.onAnswer(isCorrect);
@@ -236,12 +126,12 @@ class _BinaryChallengeWidgetState extends State<BinaryChallengeWidget> {
           final option = options[index];
           final displayValue = widget.questionType 
               ? option.toString() 
-              : _decimalToBinary(option);
+              : _binarioPerguntas.decimalToBinary(option);
           
           final isSelected = _selectedOption == index;
           final isCorrect = widget.questionType
               ? option == correctAnswer
-              : _decimalToBinary(option) == _decimalToBinary(correctAnswer);
+              : _binarioPerguntas.decimalToBinary(option) == _binarioPerguntas.decimalToBinary(correctAnswer);
           
           // Determinar cor do botão
           Color buttonColor;

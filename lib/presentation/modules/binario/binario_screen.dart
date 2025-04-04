@@ -12,7 +12,6 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'widgets/binary_challenge_widget.dart';
 import 'widgets/binary_result_widget.dart';
-import 'widgets/mascot_widget.dart';
 
 // Estado do jogo
 final gameStateProvider = StateNotifierProvider<GameStateNotifier, GameState>((ref) {
@@ -63,7 +62,6 @@ enum MascotMood { neutral, happy, sad, thinking }
 
 class GameStateNotifier extends StateNotifier<GameState> {
   Timer? _timer;
-  final FlutterTts _flutterTts = FlutterTts();
   final AudioPlayer _audioPlayer = AudioPlayer();
   
   GameStateNotifier() : super(GameState());
@@ -71,20 +69,12 @@ class GameStateNotifier extends StateNotifier<GameState> {
   void startGame({bool timerMode = false}) {
     state = GameState(
       isTimerMode: timerMode,
+      currentQuestion: 1, // Define currentQuestion como 1 para mostrar o desafio imediatamente
     );
     
     if (timerMode) {
       _startTimer();
     }
-    
-    // Inicializa TTS
-    _initTts();
-  }
-  
-  Future<void> _initTts() async {
-    await _flutterTts.setLanguage("pt-BR");
-    await _flutterTts.setSpeechRate(0.5);
-    await _flutterTts.setVolume(1.0);
   }
 
   void _startTimer() {
@@ -109,15 +99,9 @@ class GameStateNotifier extends StateNotifier<GameState> {
         score: state.score + 1,
         mascotMood: MascotMood.happy,
       );
-      
-      // Falar mensagem de acerto
-      await _flutterTts.speak("Muito bem! Você acertou!");
     } else {
       // Atualizar estado com humor do mascote
       state = state.copyWith(mascotMood: MascotMood.sad);
-      
-      // Falar dica
-      await _flutterTts.speak("Ops! Tente novamente. Lembre-se que cada dígito binário representa uma potência de 2.");
     }
 
     // Aguardar um pouco antes de mudar para a próxima pergunta
@@ -144,7 +128,6 @@ class GameStateNotifier extends StateNotifier<GameState> {
   @override
   void dispose() {
     _timer?.cancel();
-    _flutterTts.stop();
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -187,11 +170,13 @@ class _BinarioScreenState extends ConsumerState<BinarioScreen> with SingleTicker
         title: Text("Binário", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/'),
-          tooltip: "Voltar",
-        ),
+        leading: gameState.currentQuestion > 0 && !gameState.isGameOver
+          ? null // Remove o botão de voltar durante o quiz
+          : IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => context.go('/'),
+              tooltip: "Voltar",
+            ),
         actions: [
           if (!gameState.isGameOver && gameState.currentQuestion > 0)
             Padding(
@@ -561,7 +546,8 @@ class _BinarioScreenState extends ConsumerState<BinarioScreen> with SingleTicker
 
   Widget _buildChallengeScreen() {
     final gameState = ref.watch(gameStateProvider);
-    final questionType = Random().nextBool(); // true = binário para decimal, false = decimal para binário
+    // Usar o índice da questão para determinar o tipo, garantindo consistência
+    final questionType = gameState.currentQuestion % 2 == 0; // true = binário para decimal, false = decimal para binário
     
     return _buildGlassmorphicCard(
       child: Column(
@@ -622,6 +608,7 @@ class _BinarioScreenState extends ConsumerState<BinarioScreen> with SingleTicker
           // Desafio
           BinaryChallengeWidget(
             questionType: questionType,
+            currentQuestion: gameState.currentQuestion,
             onAnswer: (bool isCorrect) {
               ref.read(gameStateProvider.notifier).answerQuestion(isCorrect);
             },
@@ -665,8 +652,10 @@ class _BinarioScreenState extends ConsumerState<BinarioScreen> with SingleTicker
           const SizedBox(height: 32),
           
           // Botões
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 16, // Espaçamento horizontal entre os botões
+            runSpacing: 16, // Espaçamento vertical entre as linhas
             children: [
               ElevatedButton.icon(
                 onPressed: () {
@@ -677,11 +666,10 @@ class _BinarioScreenState extends ConsumerState<BinarioScreen> with SingleTicker
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue.shade600,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
-              const SizedBox(width: 16),
               OutlinedButton.icon(
                 onPressed: () => context.go('/'),
                 icon: const Icon(Icons.home),
@@ -689,7 +677,7 @@ class _BinarioScreenState extends ConsumerState<BinarioScreen> with SingleTicker
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.white,
                   side: const BorderSide(color: Colors.white30),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
