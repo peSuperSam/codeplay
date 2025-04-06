@@ -8,11 +8,12 @@ class MascoteDicaWidget extends StatefulWidget {
   State<MascoteDicaWidget> createState() => _MascoteDicaWidgetState();
 }
 
-class _MascoteDicaWidgetState extends State<MascoteDicaWidget> with SingleTickerProviderStateMixin {
+class _MascoteDicaWidgetState extends State<MascoteDicaWidget>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _bounceAnimation;
   int _dicaAtual = 0;
-  
+
   final List<String> _dicas = [
     "A tabela ASCII foi criada em 1963 para padronizar a comunicação entre computadores.",
     "ASCII significa American Standard Code for Information Interchange.",
@@ -33,15 +34,12 @@ class _MascoteDicaWidgetState extends State<MascoteDicaWidget> with SingleTicker
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-    
+
     _bounceAnimation = Tween<double>(
       begin: 0.0,
       end: 10.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.elasticOut,
-    ));
-    
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
+
     _controller.repeat(reverse: true);
   }
 
@@ -64,9 +62,9 @@ class _MascoteDicaWidgetState extends State<MascoteDicaWidget> with SingleTicker
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.blue.shade900.withOpacity(0.2),
+          color: Colors.blue.shade900.withAlpha(51),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.blue.shade200.withOpacity(0.3)),
+          border: Border.all(color: Colors.blue.shade200.withAlpha(77)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,15 +75,12 @@ class _MascoteDicaWidgetState extends State<MascoteDicaWidget> with SingleTicker
               builder: (context, child) {
                 return Transform.translate(
                   offset: Offset(0, _bounceAnimation.value),
-                  child: Image.asset(
-                    'assets/images/mascote.png',
-                    height: 60,
-                  ),
+                  child: Image.asset('assets/images/mascote.png', height: 60),
                 );
               },
             ),
             const SizedBox(width: 12),
-            
+
             // Balão de dica
             Expanded(
               child: Column(
@@ -116,14 +111,14 @@ class _MascoteDicaWidgetState extends State<MascoteDicaWidget> with SingleTicker
                         style: GoogleFonts.poppins(
                           fontSize: 11,
                           fontStyle: FontStyle.italic,
-                          color: Colors.white.withOpacity(0.85),
+                          color: Colors.white.withAlpha(217),
                         ),
                       ),
                       const SizedBox(width: 4),
                       Icon(
                         Icons.touch_app,
                         size: 14,
-                        color: Colors.white.withOpacity(0.85),
+                        color: Colors.white.withAlpha(217),
                       ),
                     ],
                   ),

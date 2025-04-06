@@ -1,478 +1,387 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
-import 'widgets/ascii_table_widget.dart';
-import 'widgets/mascote_dica_widget.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../../../core/utils/glass_utils.dart';
+import '../../shared/widgets/mascote_widget.dart';
+import '../../shared/widgets/background_widget.dart';
+import 'widgets/ascii_example_card.dart';
+import 'widgets/ascii_input_section.dart';
 
-class AsciiScreen extends StatelessWidget {
+class AsciiScreen extends StatefulWidget {
   const AsciiScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text("ASCII", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/'),
-          tooltip: "Voltar",
-        ),
-      ),
-      body: Stack(
-        children: [
-          // Fundo com gradiente
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isDark
-                  ? [Colors.black, Colors.grey.shade900]
-                  : [Colors.blue.shade900, Colors.blue.shade700],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-          ),
-          
-          // Overlay com efeito de matriz (opcional)
-          Opacity(
-            opacity: 0.2,
-            child: Image.asset(
-              'assets/images/matrix_bg.png',
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-            ),
-          ),
-          
-          // Conteúdo principal
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-              child: Column(
-                children: [
-
-                  // Card com efeito glass
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                        )
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "O que é ASCII?",
-                          style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          "ASCII é uma tabela que transforma letras e símbolos em números para que o computador entenda. Por exemplo: a letra A é representada pelo número 65.",
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            color: Colors.white,
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // Exemplos visuais com ícones
-                        Text(
-                          "Exemplos de caracteres ASCII:",
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 16,
-                          runSpacing: 16,
-                          alignment: WrapAlignment.center,
-                          children: const [
-                            _AsciiExampleCard(char: 'A', code: 65, description: 'Letra A maiúscula'),
-                            _AsciiExampleCard(char: 'a', code: 97, description: 'Letra a minúscula'),
-                            _AsciiExampleCard(char: '0', code: 48, description: 'Dígito zero'),
-                            _AsciiExampleCard(char: ' ', code: 32, description: 'Espaço em branco'),
-                            _AsciiExampleCard(char: '!', code: 33, description: 'Ponto de exclamação'),
-                            _AsciiExampleCard(char: '?', code: 63, description: 'Ponto de interrogação'),
-                          ],
-                        ),
-
-                        const SizedBox(height: 30),
-
-                        // Interativo (seção de conversão)
-                        _AsciiInputSection(),
-                        
-                        const SizedBox(height: 30),
-                        
-                        // Tabela ASCII completa expansível
-                        const AsciiTableWidget(),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  State<AsciiScreen> createState() => _AsciiScreenState();
 }
 
-class _AsciiExampleCard extends StatefulWidget {
-  final String char;
-  final int code;
-  final String description;
-
-  const _AsciiExampleCard({
-    required this.char, 
-    required this.code, 
-    required this.description
-  });
+class _AsciiScreenState extends State<AsciiScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _backgroundController;
+  final List<Map<String, dynamic>> _exampleChars = [
+    {'char': 'A', 'code': 65, 'description': 'Letra A maiúscula'},
+    {'char': 'a', 'code': 97, 'description': 'Letra a minúscula'},
+    {'char': '0', 'code': 48, 'description': 'Número zero'},
+    {'char': '@', 'code': 64, 'description': 'Símbolo arroba'},
+    {'char': ' ', 'code': 32, 'description': 'Espaço'},
+  ];
 
   @override
-  State<_AsciiExampleCard> createState() => _AsciiExampleCardState();
-}
-
-class _AsciiExampleCardState extends State<_AsciiExampleCard> {
-  bool _isExpanded = false;
-  
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _isExpanded = !_isExpanded;
-        });
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.all(_isExpanded ? 12 : 8),
-        decoration: BoxDecoration(
-          color: _isExpanded 
-            ? Colors.blue.shade700.withOpacity(0.5) 
-            : Colors.white.withOpacity(0.3),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: _isExpanded 
-              ? Colors.blue.shade300.withOpacity(0.5) 
-              : Colors.transparent,
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '"${widget.char}"',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16, 
-                    color: Colors.white, 
-                    fontWeight: FontWeight.bold
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const Icon(Icons.arrow_forward, size: 16, color: Colors.white),
-                const SizedBox(width: 8),
-                Text(
-                  widget.code.toString(),
-                  style: GoogleFonts.poppins(fontSize: 16, color: Colors.white),
-                ),
-              ],
-            ),
-            
-            // Detalhes adicionais quando expandido
-            if (_isExpanded) ...[  
-              const SizedBox(height: 12),
-              Divider(color: Colors.white.withOpacity(0.2)),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _detailRow('Binário:', '${widget.code.toRadixString(2).padLeft(8, '0')}'),
-                      const SizedBox(height: 4),
-                      _detailRow('Hexadecimal:', '0x${widget.code.toRadixString(16).toUpperCase()}'),
-                      const SizedBox(height: 4),
-                      _detailRow('Descrição:', widget.description),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
+  void initState() {
+    super.initState();
+    _backgroundController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 20),
+    )..repeat(reverse: true);
   }
-  
-  Widget _detailRow(String label, String value) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            color: Colors.white.withOpacity(0.7),
-          ),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          value,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _AsciiInputSection extends StatefulWidget {
-  const _AsciiInputSection();
-
-  @override
-  State<_AsciiInputSection> createState() => _AsciiInputSectionState();
-}
-
-class _AsciiInputSectionState extends State<_AsciiInputSection> {
-  final TextEditingController _charController = TextEditingController();
-  final TextEditingController _codeController = TextEditingController();
-  String? _errorMessage;
-  bool _showSuccess = false;
 
   @override
   void dispose() {
-    _charController.dispose();
-    _codeController.dispose();
+    _backgroundController.dispose();
     super.dispose();
-  }
-
-  void _convertCharToAscii() {
-    setState(() {
-      _errorMessage = null;
-      _showSuccess = false;
-    });
-
-    final input = _charController.text;
-    if (input.isEmpty) {
-      setState(() {
-        _errorMessage = "Digite um caractere";
-      });
-      return;
-    }
-
-    if (input.length > 1) {
-      setState(() {
-        _errorMessage = "Digite apenas um caractere";
-      });
-      return;
-    }
-
-    final asciiCode = input.codeUnitAt(0);
-    _codeController.text = asciiCode.toString();
-    setState(() {
-      _showSuccess = true;
-    });
-  }
-
-  void _convertAsciiToChar() {
-    setState(() {
-      _errorMessage = null;
-      _showSuccess = false;
-    });
-
-    final input = _codeController.text;
-    if (input.isEmpty) {
-      setState(() {
-        _errorMessage = "Digite um código ASCII";
-      });
-      return;
-    }
-
-    final code = int.tryParse(input);
-    if (code == null) {
-      setState(() {
-        _errorMessage = "Digite apenas números";
-      });
-      return;
-    }
-
-    if (code < 0 || code > 127) {
-      setState(() {
-        _errorMessage = "O código deve estar entre 0 e 127";
-      });
-      return;
-    }
-
-    _charController.text = String.fromCharCode(code);
-    setState(() {
-      _showSuccess = true;
-    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Teste você mesmo!",
-          style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          "Digite uma letra ou número abaixo para ver a conversão.",
-          style: GoogleFonts.poppins(fontSize: 14, color: Colors.white70),
-        ),
-        const SizedBox(height: 20),
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: _buildAppBar(context),
+      body: Stack(
+        children: [
+          // Fundo animado
+          AnimatedBackgroundWidget(
+            controller: _backgroundController,
+            isDark: Theme.of(context).brightness == Brightness.dark,
+          ),
 
-        // Seção interativa com TextFields
-        Row(
-          children: [
-            // Campo para caractere
-            Expanded(
-              child: TextField(
-                controller: _charController,
-                style: GoogleFonts.poppins(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: "Caractere",
-                  labelStyle: GoogleFonts.poppins(color: Colors.white.withOpacity(0.9)),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.white70),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.blue.shade300),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.1),
-                ),
-                maxLength: 1,
-                buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
-              ),
-            ),
-            
-            // Botões de conversão
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+          // Conteúdo principal
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  IconButton(
-                    onPressed: _convertCharToAscii,
-                    icon: const Icon(Icons.arrow_forward, color: Colors.white),
-                    tooltip: "Converter para ASCII",
+                  const SizedBox(height: 16),
+
+                  // Título do Módulo
+                  Animate(
+                    effects: [
+                      FadeEffect(duration: 400.ms),
+                      SlideEffect(
+                        begin: const Offset(0, -0.2),
+                        end: Offset.zero,
+                        duration: 400.ms,
+                      ),
+                    ],
+                    child: Text(
+                      "Código ASCII",
+                      style: GoogleFonts.orbitron(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 2,
+                      ),
+                    ),
                   ),
-                  IconButton(
-                    onPressed: _convertAsciiToChar,
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    tooltip: "Converter para caractere",
+
+                  const SizedBox(height: 8),
+
+                  // Subtítulo com descrição
+                  Animate(
+                    effects: [FadeEffect(duration: 400.ms, delay: 200.ms)],
+                    child: Text(
+                      "Entenda como computadores representam caracteres",
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        color: Colors.white.withAlpha(230),
+                      ),
+                    ),
                   ),
+
+                  const SizedBox(height: 24),
+
+                  // Mascote explicativo
+                  Animate(
+                    effects: [FadeEffect(duration: 500.ms, delay: 400.ms)],
+                    child: MascoteWidget(
+                      message:
+                          "O código ASCII é um sistema de numeração que representa caracteres como números. "
+                          "Por exemplo, a letra 'A' é representada pelo número 65, enquanto o caractere '0' é o número 48.",
+                      mascotType: MascotType.tip,
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Cartão de conteúdo principal
+                  Animate(
+                    effects: [FadeEffect(duration: 600.ms, delay: 600.ms)],
+                    child: GlassUtils.buildGlassCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "O QUE É ASCII?",
+                            style: GoogleFonts.orbitron(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            "ASCII (American Standard Code for Information Interchange) é uma tabela de códigos que relaciona números a caracteres de texto. "
+                            "Ele define 128 caracteres (0-127), incluindo letras maiúsculas e minúsculas, números, símbolos e caracteres de controle.",
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: Colors.white.withAlpha(230),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Exemplos de caracteres ASCII
+                          Text(
+                            "EXEMPLOS",
+                            style: GoogleFonts.orbitron(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Lista de exemplos
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children:
+                                _exampleChars
+                                    .map(
+                                      (example) => AsciiExampleCard(
+                                        char: example['char'],
+                                        code: example['code'],
+                                        description: example['description'],
+                                      ),
+                                    )
+                                    .toList(),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Seção interativa
+                          const AsciiInputSection(),
+                          const SizedBox(height: 32),
+
+                          // Aviso para chamar atenção para a tabela
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 16),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.cyan.shade800.withAlpha(100),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.cyan.shade300.withAlpha(150),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.new_releases,
+                                  color: Colors.cyan.shade300,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    "NOVO! Tabela ASCII completa disponível em tela separada!",
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ).animate().fadeIn(duration: 800.ms, delay: 200.ms),
+
+                          const SizedBox(height: 16),
+
+                          // Botão para acessar a tabela ASCII separada
+                          Container(
+                            width: double.infinity,
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 16,
+                            ),
+                            child: Animate(
+                              effects: [
+                                FadeEffect(duration: 600.ms, delay: 300.ms),
+                                SlideEffect(
+                                  begin: const Offset(0, 0.2),
+                                  end: Offset.zero,
+                                  duration: 500.ms,
+                                ),
+                                ShakeEffect(
+                                  duration: 1000.ms,
+                                  delay: 1500.ms,
+                                  hz: 3,
+                                ),
+                              ],
+                              child: ElevatedButton.icon(
+                                key: const Key('btn_tabela_ascii'),
+                                onPressed: () {
+                                  context.go('/tabela-ascii');
+                                },
+                                icon: const Icon(Icons.table_chart, size: 28),
+                                label: Padding(
+                                  padding: const EdgeInsets.all(12.0),
+                                  child: Text(
+                                    "VER TABELA ASCII COMPLETA",
+                                    style: GoogleFonts.orbitron(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.5,
+                                    ),
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red.shade600,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 20,
+                                    horizontal: 28,
+                                  ),
+                                  elevation: 12,
+                                  shadowColor: Colors.red.shade900.withAlpha(
+                                    180,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    side: BorderSide(
+                                      color: Colors.yellow,
+                                      width: 3,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
                 ],
               ),
             ),
-            
-            // Campo para código ASCII
-            Expanded(
-              child: TextField(
-                controller: _codeController,
-                style: GoogleFonts.poppins(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: "Código ASCII",
-                  labelStyle: GoogleFonts.poppins(color: Colors.white.withOpacity(0.9)),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.white70),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // AppBar personalizada com efeito de vidro
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
+    return GlassUtils.buildGlassAppBar(
+      title: "ASCII",
+      context: context,
+      titleStyle: GoogleFonts.orbitron(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 2,
+      ),
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: () {
+          // Sempre navegar para a rota principal - solução mais estável para web/Edge
+          context.go('/');
+        },
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.info_outline),
+          onPressed: () {
+            _showInfoModal(context);
+          },
+        ),
+      ],
+    );
+  }
+
+  void _showInfoModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder:
+          (context) => ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade900.withAlpha(128),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.blue.shade300),
+                  border: Border.all(
+                    color: Colors.blue.shade200.withAlpha(51),
+                    width: 2,
                   ),
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.1),
                 ),
-                keyboardType: TextInputType.number,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "SOBRE O CÓDIGO ASCII",
+                      style: GoogleFonts.orbitron(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      "O código ASCII foi desenvolvido na década de 1960 para padronizar a comunicação entre computadores. "
+                      "Originalmente usava 7 bits, o que permitia representar 128 caracteres (0-127). "
+                      "Mais tarde, a extensão ASCII ou ASCII estendido passou a utilizar 8 bits, permitindo representar 256 caracteres (0-255).",
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade700,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Text(
+                        "ENTENDI",
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
-        
-        // Mensagem de erro ou sucesso
-        if (_errorMessage != null) ...[  
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.red, size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _errorMessage!,
-                    style: GoogleFonts.poppins(color: Colors.red.shade300, fontSize: 14),
-                  ),
-                ),
-              ],
-            ),
           ),
-        ],
-        
-        if (_showSuccess) ...[  
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.check_circle_outline, color: Colors.green, size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    "Conversão realizada com sucesso!",
-                    style: GoogleFonts.poppins(color: Colors.green.shade300, fontSize: 14),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ],
     );
   }
 }
